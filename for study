@@ -1,0 +1,72 @@
+import requests
+from bs4 import BeautifulSoup
+import lxml
+
+URL = "https://books.toscrape.com/catalogue/page-{}.html"
+WORD_NUM_MAP = {   # пишем словарь
+        "One": 1,
+        "Two": 2,
+        "Three": 3,
+        "Four": 4,
+        "Five": 5,
+        "Zero": 0
+}
+
+session = requests.session()
+session.headers = {
+    "user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
+    "accept-language: ru-RU,ru;q=0.9"
+}
+
+try:
+  final_result = []
+  for page in range(1, 51):
+    res = session.get(URL.format(page))
+    res.raise_for_status()
+    html = res.text
+  #  select / select_one возвращают объекты под условия/вызварщает первый объект попавшийся
+  #  find ищет по одному значению
+    soup = BeautifulSoup(html, 'lxml')
+
+    ol = soup.select_one("ol.row")
+    lis = ol.select("li")
+
+    result = []
+    for li in lis:
+      name_obj = li.select_one("h3 a")
+      if name_obj:
+        name = name_obj['title']
+      else:
+        name = ""
+      # print(name['title'])
+
+      rating_obj = li.select_one("p.star-rating")
+      if rating_obj:
+        rating = WORD_NUM_MAP[rating_obj['class'][1]]
+          # rating = raiting_obj['class'][1] # прописываем индекс в значениях (второе)
+      else:
+        rating = ""
+
+      price_obj = li.select_one("div.product_price p")
+      if price_obj:
+        price = price_obj.text.split('£')[1]
+      else:
+        price = ""
+      # print(price.split('£')[1]) # берем строку с £ и по индексу второй элемент 
+      book_info = {
+          "name": name,
+          "rating": rating,
+          "price": price
+    }
+    result.append(book_info)
+  final_result += result 
+  print(final_result)
+    # print(book_info)
+
+    
+    # обращаемся по ключу
+
+except HTTPError as ht:
+    print(f"ERROR: {ht}")
+except Exception as ex:
+    print(f"ERROR: {ex}")

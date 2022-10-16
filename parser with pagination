@@ -1,6 +1,7 @@
 import requests
+from requests.exceptions import HTTPError
 from bs4 import BeautifulSoup
-import lxml
+import csv
 
 URL = "https://books.toscrape.com/catalogue/page-{}.html"
 WORD_NUM_MAP = {   # пишем словарь
@@ -20,12 +21,13 @@ session.headers = {
 
 try:
   final_result = []
-  for page in range(1, 51):
+  # for page in range(1, 51):
+  page = 1
+  while True:
     res = session.get(URL.format(page))
     res.raise_for_status()
     html = res.text
-  #  select / select_one возвращают объекты под условия/вызварщает первый объект попавшийся
-  #  find ищет по одному значению
+
     soup = BeautifulSoup(html, 'lxml')
 
     ol = soup.select_one("ol.row")
@@ -59,12 +61,17 @@ try:
           "price": price
       }
       result.append(book_info)
-    final_result += result
 
-    print(final_result)
-    
+    final_result += result
+    page += 1
 
 except HTTPError as ht:
     print(f"ERROR: {ht}")
 except Exception as ex:
     print(f"ERROR: {ex}")
+
+with open("book.csv", "w") as f:
+  writer = csv.DictWriter(f, result[0].keys())
+  writer.writeheader()
+  for r in result:
+    writer.writerow(r)
